@@ -79,9 +79,7 @@ module.exports = async function (fastify, opts) {
                 })
             }
 
-            return {
-                message: 'Stock added',
-            }
+            return { message: 'Stock added' }
         } finally {
             if (conn) conn.release()
         }
