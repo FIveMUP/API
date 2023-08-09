@@ -3,7 +3,7 @@
 module.exports = async function (fastify, opts) {
     const JWTModel = require('../../../models/JWT')
 
-    fastify.get('/', async function (request, reply) {
+    fastify.get('/info', async function (request, reply) {
         let conn
         const jwt = new JWTModel()
 
