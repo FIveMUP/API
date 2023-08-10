@@ -4,7 +4,7 @@ module.exports = async function (fastify, opts) {
     const argon2 = require('argon2')
     const { nanoid } = require('nanoid')
 
-    fastify.get('/', async function (request, reply) {
+    fastify.post('/', async function (request, reply) {
         let conn
         const JWTModel = require('../../../../models/JWT')
         const jwt = new JWTModel()
@@ -12,10 +12,10 @@ module.exports = async function (fastify, opts) {
         const { username, password } = request.query
 
         if (!username || !password) {
-            return reply.code(400).send({
+            return reply.code(500).send({
                 message: username
-                    ? 'password is required'
-                    : 'username is required',
+                    ? 'Password is required'
+                    : 'Username is required',
             })
         }
 
@@ -28,8 +28,8 @@ module.exports = async function (fastify, opts) {
 
             if (rows.length > 0) {
                 return reply
-                    .code(400)
-                    .send({ message: 'username already exists' })
+                    .code(500)
+                    .send({ message: 'Username already exists' })
             }
 
             const hashedPassword = await argon2.hash(password)
