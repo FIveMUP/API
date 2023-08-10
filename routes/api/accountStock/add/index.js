@@ -6,7 +6,7 @@ module.exports = async function (fastify, opts) {
     const jwt = new JWTModel()
     const { nanoid } = require('nanoid')
 
-    fastify.get('/', async function (request, reply) {
+    fastify.post('/', async function (request, reply) {
         let conn
 
         const {
@@ -61,7 +61,7 @@ module.exports = async function (fastify, opts) {
             )
 
             if (rows.length > 0) {
-                return reply.code(400).send({
+                return reply.code(500).send({
                     message: 'Stock already exists',
                 })
             }
@@ -74,10 +74,12 @@ module.exports = async function (fastify, opts) {
             )
 
             if (insertResult.affectedRows <= 0) {
-                return reply.code(400).send({
+                return reply.code(500).send({
                     message: 'Failed to add stock',
                 })
             }
+
+            console.log(`Added stock: ${stockId} with mail: ${mail}`)
 
             return { message: 'Stock added' }
         } finally {
