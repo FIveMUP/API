@@ -9,13 +9,14 @@
   "scripts": {
     "test": "tap \"test/**/*.test.js\"",
     "start": "fastify start -l info app.js",
-    "dev": "fastify start -w -P app.js"
+    "dev": "fastify start -p 5050 -w -P app.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@fastify/autoload": "^5.0.0",
+    "@fastify/cors": "^8.3.0",
     "@fastify/sensible": "^5.0.0",
     "argon2": "^0.30.3",
     "fastify": "^4.0.0",
