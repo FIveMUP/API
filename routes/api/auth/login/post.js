@@ -50,6 +50,7 @@ module.exports = async function (fastify, opts) {
                     type: 'user_auth',
                     userId: rows[0].id,
                 }),
+                username: rows[0].username,
             }
         } finally {
             if (conn) conn.release()
