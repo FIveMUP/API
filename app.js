@@ -17,6 +17,7 @@ const pool = mariadb.createPool({
 module.exports.options = {}
 
 module.exports = async function (fastify, opts) {
+    console.log(fastify.version)
     // Place here your custom code!
 
     fastify.decorateRequest('dbpool', '')
