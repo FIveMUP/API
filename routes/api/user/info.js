@@ -38,8 +38,9 @@ module.exports = async function (fastify, opts) {
                 user: {
                     id: rows[0].id,
                     username: rows[0].username,
-                    rank: rows[0].rank,
                     servers: JSON.parse(rows[0].servers),
+                    image: rows[0].image,
+                    rank: rows[0].rank,
                 },
             }
         } finally {
