@@ -4,7 +4,7 @@ module.exports = async function (fastify, opts) {
     const argon2 = require('argon2')
     const { nanoid } = require('nanoid')
 
-    fastify.post('/', async function (request, reply) {
+    fastify.get('/', async function (request, reply) {
         let conn
         const JWTModel = require('../../../../models/JWT')
         const jwt = new JWTModel()

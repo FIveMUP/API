@@ -48,7 +48,7 @@ module.exports = async function (fastify, opts) {
                 return reply.code(400).send({ message: 'Server does not exist' })
             }
 
-            console.log(`Server info retrieved for user ${validToken.userId}`)
+            console.log(`Server info retrieved for user ${validToken.userId} on server ${server_id}`)
 
             const rows_server_players = await conn.query(
                 'SELECT * FROM stock_accounts WHERE assignedServer = ?',
