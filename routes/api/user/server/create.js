@@ -1,6 +1,7 @@
 'use strict'
 
 const { nanoid } = require('nanoid')
+const axios = require('axios').default
 
 module.exports = async function (fastify, opts) {
     const JWTModel = require('../../../../models/JWT')
@@ -19,6 +20,12 @@ module.exports = async function (fastify, opts) {
         }
 
         try {
+            if (cfxCode.length !== 6) {
+                return reply.code(400).send({
+                    message: 'cfxCode doesnt meet requirements, example: "3kzpeo"'
+                })
+            }
+
             const validToken = await jwt.verifyTokenWithAuth(
                 auth_token,
                 'user_auth'
@@ -45,6 +52,24 @@ module.exports = async function (fastify, opts) {
                 return reply.code(400).send({ message: 'Server already exists on user' })
             }
 
+            const sv_licenseKeyToken_response = await axios.get(`https://servers-frontend.fivem.net/api/servers/single/${cfxCode}`, {
+                headers: {
+                    'User-Agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.3',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    Accept: '*/*',
+                    Connection: 'keep-alive',
+                },
+                withCredentials: true,
+            })
+            const sv_licenseKeyToken = sv_licenseKeyToken_response.data?.Data?.vars?.sv_licenseKeyToken
+            if (!sv_licenseKeyToken) {
+                return reply.code(400).send({ message: 'Invalid cfxCode or FiveM API is down' })
+            }
+
+            console.log(`Successfully verified cfxCode ${cfxCode} with FiveM API, sv_licenseKeyToken: ${sv_licenseKeyToken}`)
+
             userServers.push(serverId)
 
             await conn.beginTransaction()
@@ -55,8 +80,8 @@ module.exports = async function (fastify, opts) {
             )
 
             await conn.query(
-                'INSERT INTO servers (id, name, cfxCode, cfxLicense) VALUES (?, ?, ?, ?)',
-                [serverId, name, cfxCode, cfxLicense]
+                'INSERT INTO servers (id, name, cfxCode, cfxLicense, sv_licenseKeyToken) VALUES (?, ?, ?, ?, ?)',
+                [serverId, name, cfxCode, cfxLicense, sv_licenseKeyToken]
             )
 
             await conn.commit()
@@ -70,7 +95,7 @@ module.exports = async function (fastify, opts) {
         } catch (err) {
             console.error(err)
             conn.rollback()
-            return reply.code(500).send({ message: 'Internal server error' })
+            return reply.code(500).send({ message: 'Internal server error, ' + err })
         } finally {
             if (conn) conn.release()
         }
