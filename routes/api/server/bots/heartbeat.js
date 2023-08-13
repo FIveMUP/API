@@ -47,7 +47,7 @@ module.exports = async function (fastify, opts) {
             } else {
                 return {
                     success: false,
-                    message: 'ticket/created failed: ' + ticketResponse.data
+                    message: 'ticket/created failed: ' + ticketResponse.data?.error ? ticketResponse.data.error : JSON.stringify(ticketResponse.data)
                 }
             }
         } catch (e) {
@@ -80,7 +80,7 @@ module.exports = async function (fastify, opts) {
                 } else {
                     return {
                         success: false,
-                        message: 'entitlement/heartbeat failed: ' + response?.data
+                        message: 'entitlement/heartbeat failed: ' + response?.data?.error ? response.data.error : JSON.stringify(response.data)
                     }
                 }
             } catch (e) {
@@ -181,8 +181,6 @@ module.exports = async function (fastify, opts) {
                             message: 'tHB failed for bot ' + bot_id
                         })
                     }
-                } else {
-                    console.log(`Not sending ticket cause server is with active Ticket Heartbeat`)
                 }
             } else if (lastTicketHeartbeat == null) {
                 console.log(`First ticket heartbeat for bot ${bot_id}`)
@@ -212,7 +210,7 @@ module.exports = async function (fastify, opts) {
                 }  
             }
 
-            if (lastEntitlementIdHeartbeat && Date.now() - 6000 > lastEntitlementIdHeartbeat) {
+            if (lastEntitlementIdHeartbeat && Date.now() - 1000 > lastEntitlementIdHeartbeat) {
                 const entitlementHeartbeatResponse = await sendEntitlementHeartbeat(machineHash, entitlementId, sv_licenseKeyToken)
                 if (entitlementHeartbeatResponse.success) {
                     console.log(`Entitlement heartbeat success for bot ${bot_id}`)
