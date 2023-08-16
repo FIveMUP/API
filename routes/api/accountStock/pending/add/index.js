@@ -1,8 +1,8 @@
 'use strict'
 
 module.exports = async function (fastify, opts) {
-    const JWTModel = require('../../../../models/JWT')
-    const UserModel = require('../../../../models/User')
+    const JWTModel = require('../../../../../models/JWT')
+    const UserModel = require('../../../../../models/User')
     const jwt = new JWTModel()
     const { nanoid } = require('nanoid')
 
