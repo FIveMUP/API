@@ -13,9 +13,6 @@ module.exports = async function (fastify, opts) {
             username,
             mail,
             password,
-            entitlementId,
-            machineHash,
-            pc_name,
             auth_token,
         } = request.query
 
@@ -23,14 +20,11 @@ module.exports = async function (fastify, opts) {
             !username ||
             !mail ||
             !password ||
-            !entitlementId ||
-            !machineHash ||
-            !pc_name ||
             !auth_token
         ) {
             return reply.code(400).send({
                 message:
-                    'Need to send: username, mail, password, entitlementId, machineHash, pc_name, auth_token',
+                    'Need to send: username, mail, password, pc_name, auth_token',
             })
         }
 
@@ -38,25 +32,29 @@ module.exports = async function (fastify, opts) {
             conn = await request.dbpool.getConnection()
 
             if (auth_token !== "califatogang") {
-                return reply.code(400).send(validToken)
+                console.log(`Invalid auth token: ${auth_token}`)
+                return reply.code(400).send("Token invalid")
             }
 
             const rows = await conn.query(
-                'SELECT * FROM pending_stock_accounts WHERE entitlementId = ?',
-                entitlementId
+                'SELECT * FROM pending_stock_accounts WHERE mail = ?',
+                mail
             )
 
-            if (rows.length > 0) {
+            const stock_rows = await conn.query(
+                'SELECT * FROM stock_accounts WHERE mail = ?',
+                mail
+            )
+
+            if (rows.length > 0 || stock_rows.length > 0) {
                 return reply.code(500).send({
-                    message: 'Stock already exists',
+                    message: `This account already exists on ${rows.length > 0 ? 'pending' : 'stock'} accounts`,
                 })
             }
 
-            const stockId = nanoid(12)
-
             const insertResult = await conn.query(
-                'INSERT INTO stock_accounts (id, username, mail, password, entitlementId, machineHash) VALUES (?, ?, ?, ?, ?, ?)',
-                [stockId, username, mail, password, entitlementId, machineHash]
+                'INSERT INTO pending_stock_accounts (username, mail, password) VALUES (?, ?, ?)',
+                [username, mail, password]
             )
 
             if (insertResult.affectedRows <= 0) {
@@ -65,7 +63,7 @@ module.exports = async function (fastify, opts) {
                 })
             }
 
-            console.log(`Added stock: ${stockId} with mail: ${mail}`)
+            console.log(`Added pending stock with mail: ${mail}`)
 
             return { message: 'Stock added' }
         } finally {
