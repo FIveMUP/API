@@ -11,16 +11,17 @@ module.exports = async function (fastify, opts) {
     const jwt = new JWTModel()
     const axios = require('axios').default
     const moment = require('moment')
+    const { HttpsProxyAgent } = require('hpagent')
 
     const timestampToMySQLDatetime = (jsTimestamp) => {
         return moment.utc(jsTimestamp).format('YYYY-MM-DD HH:mm:ss');
     }
-    
+
     // Convierte un MySQL datetime a un timestamp de JavaScript asumiendo que el datetime es en UTC
     const mySQLDatetimeToTimestamp = (mysqlDatetime) => {
         return moment.utc(mysqlDatetime, 'YYYY-MM-DD HH:mm:ss').valueOf();
     }
-    
+
     const sendTicketHeartbeat = async (machineHash, entitlementId, sv_licenseKeyToken) => {
         try {
 
@@ -32,13 +33,18 @@ module.exports = async function (fastify, opts) {
                 `&server=http%3a%2f%51.91.102.108%3a30120%2f&serverKeyToken=${encodeURIComponent(
                     sv_licenseKeyToken
                 )}&token=` + entitlementId
-    
+
             const ticketResponse = await axios.post(
                 'https://lambda.fivem.net/api/ticket/create',
                 ticketHeartbeat,
-                { headers }
+                {
+                    headers, httpsAgent: new HttpsProxyAgent({
+                        proxy:
+                            "https://cristianrg36:Z36BXSuHWddm3QCm@proxy.packetstream.io:31111",
+                    }),
+                }
             )
-    
+
             if (ticketResponse.data && ticketResponse.data.ticket) {
                 return {
                     success: true,
@@ -58,37 +64,37 @@ module.exports = async function (fastify, opts) {
             }
         }
     }
-    
+
     const sendEntitlementHeartbeat = async (machineHash, entitlementId) => {
         try {
             const entitlementHeartbeat =
-            'entitlementId=' +
-            entitlementId +
-            '&f=%7b%7d&gameName=gta5&h2=YyMyxwNpROOEdyxjBu%2bNls1LHzPzx1zTEX7RtDmwD5Eb2MPVgeWNFbNZC3YfGgUnbriTU2jsl7jO0SQ9%2bmDqmU1rLf075r4bxMuKLjcUu2IPy3zVXd2ni2xVJJw8%2bFOoWqaTKIQGggBYEBEBRNOsFNjp6TLqbCwKiqMmc7rl8pLj6SCUm1MpNcBg%2fIE15VmMk4erFf26PdrA4GpAKAP%2fdsM9QaY1GbBnwM4V4xWl8EtLWFPF0XW9xePpm5ZPOjU3OfMAZ2eTF6cNkNsxAGHIMB4VTaKLGWoWmRToEEzbh9wTebY97mYeFdtqF8L%2bnNPVv6y0k4szAwdbInJ2oE73iFj5mZIKLGxqKtNGg9r10nJm2Bk1bTchSWTKlsI%2ffN1vvG6g1fxNDf5%2bJyqGnhktaEMt7L8JTxpgHPuAKtAN795kAM%2fZRgHUUqJzxnH4Ps3jSaMAt5eDpzfdkGvhADFIMMfSEEZ6WqQyvwRw85arnc6IgNYKFlqzGnpsHcWE13elDaRPbgNfMwT7U4Jk31vcfSsadYeqN6Ngad6CeF9zty7GWMklfWcRuaRqtiJvPI3%2fhGymZwPdFHsWvsBEFcbKTWVukjVzaXbuuOH81iY%2fCw7Mbq9A%2f%2fERGFNFW5HXUd9WCZsUooXHJcjVuczxO0BgQLfyEGaaemQSr0RwA3abTe7l5nY4wMC%2fJKkB1AKURTTsJcHhbK0Xrz14b5XOZIZDNlUGQpXweFTMWeualdOAxGUvDnnD0%2fqIZ39zjnPdulZUxCzGt%2fPt1Mt2nsAEJaYq%2fSLBqoahs9UtgGs%2fX9PAqqsnJdsRJ%2bZXKA%2fGfeBr58TCQsDJ8B1CCkqqsmAjItskmOY6w2%2fNGhQw7enImzXwvO4%3d&machineHash=AQAL&machineHashIndex=' +
-            encodeURIComponent(machineHash) +
-            '&rosId=1234'
-                const response = await axios.post(
-                    'https://lambda.fivem.net/api/validate/entitlement',
-                    entitlementHeartbeat,
-                    { headers }
-                )
-                if (response.data) {
-                    return {
-                        success: true,
-                        message: 'entitlement/heartbeat success: ' + response?.data
-                    }
-                } else {
-                    return {
-                        success: false,
-                        message: 'entitlement/heartbeat failed: ' + response?.data?.error ? response.data.error : JSON.stringify(response.data)
-                    }
+                'entitlementId=' +
+                entitlementId +
+                '&f=%7b%7d&gameName=gta5&h2=YyMyxwNpROOEdyxjBu%2bNls1LHzPzx1zTEX7RtDmwD5Eb2MPVgeWNFbNZC3YfGgUnbriTU2jsl7jO0SQ9%2bmDqmU1rLf075r4bxMuKLjcUu2IPy3zVXd2ni2xVJJw8%2bFOoWqaTKIQGggBYEBEBRNOsFNjp6TLqbCwKiqMmc7rl8pLj6SCUm1MpNcBg%2fIE15VmMk4erFf26PdrA4GpAKAP%2fdsM9QaY1GbBnwM4V4xWl8EtLWFPF0XW9xePpm5ZPOjU3OfMAZ2eTF6cNkNsxAGHIMB4VTaKLGWoWmRToEEzbh9wTebY97mYeFdtqF8L%2bnNPVv6y0k4szAwdbInJ2oE73iFj5mZIKLGxqKtNGg9r10nJm2Bk1bTchSWTKlsI%2ffN1vvG6g1fxNDf5%2bJyqGnhktaEMt7L8JTxpgHPuAKtAN795kAM%2fZRgHUUqJzxnH4Ps3jSaMAt5eDpzfdkGvhADFIMMfSEEZ6WqQyvwRw85arnc6IgNYKFlqzGnpsHcWE13elDaRPbgNfMwT7U4Jk31vcfSsadYeqN6Ngad6CeF9zty7GWMklfWcRuaRqtiJvPI3%2fhGymZwPdFHsWvsBEFcbKTWVukjVzaXbuuOH81iY%2fCw7Mbq9A%2f%2fERGFNFW5HXUd9WCZsUooXHJcjVuczxO0BgQLfyEGaaemQSr0RwA3abTe7l5nY4wMC%2fJKkB1AKURTTsJcHhbK0Xrz14b5XOZIZDNlUGQpXweFTMWeualdOAxGUvDnnD0%2fqIZ39zjnPdulZUxCzGt%2fPt1Mt2nsAEJaYq%2fSLBqoahs9UtgGs%2fX9PAqqsnJdsRJ%2bZXKA%2fGfeBr58TCQsDJ8B1CCkqqsmAjItskmOY6w2%2fNGhQw7enImzXwvO4%3d&machineHash=AQAL&machineHashIndex=' +
+                encodeURIComponent(machineHash) +
+                '&rosId=1234'
+            const response = await axios.post(
+                'https://lambda.fivem.net/api/validate/entitlement',
+                entitlementHeartbeat,
+                { headers }
+            )
+            if (response.data) {
+                return {
+                    success: true,
+                    message: 'entitlement/heartbeat success: ' + response?.data
                 }
-            } catch (e) {
+            } else {
                 return {
                     success: false,
-                    message: 'entitlement/heartbeat failed: ' + e.message
+                    message: 'entitlement/heartbeat failed: ' + response?.data?.error ? response.data.error : JSON.stringify(response.data)
                 }
             }
+        } catch (e) {
+            return {
+                success: false,
+                message: 'entitlement/heartbeat failed: ' + e.message
+            }
+        }
     }
 
     fastify.post('/heartbeat', async function (request, reply) {
@@ -123,6 +129,14 @@ module.exports = async function (fastify, opts) {
             const serverId = server_rows[0].id
             const sv_licenseKeyToken = server_rows[0].sv_licenseKeyToken
 
+            // if (serverId != "nfYUW5CIcBe7") {
+                console.log('Heartbeat for bot ' + bot_id + " [" + serverName + "]")
+                return reply.code(200).send({
+                    success: false,
+                    message: 'tHB - Cfx.re is on maintenace, we are awaiting for finish'
+                })
+            // }
+
             const bot_data = await conn.query(
                 'SELECT * FROM stock_accounts WHERE id = ? AND assignedServer = ?',
                 [bot_id, serverId]
@@ -147,8 +161,8 @@ module.exports = async function (fastify, opts) {
             expireOn = expireOn ? mySQLDatetimeToTimestamp(expireOn) : null
             lastTicketHeartbeat = lastTicketHeartbeat ? mySQLDatetimeToTimestamp(lastTicketHeartbeat) : null
             lastEntitlementIdHeartbeat = lastEntitlementIdHeartbeat ? mySQLDatetimeToTimestamp(lastEntitlementIdHeartbeat) : null
-            
-            if (expireOn &&  expireOn < Date.now()) {
+
+            if (expireOn && expireOn < Date.now()) {
                 return reply.code(403).send({
                     message: 'Bot expired',
                 })
@@ -207,13 +221,13 @@ module.exports = async function (fastify, opts) {
                         success: false,
                         message: 'tHB failed for bot ' + bot_id
                     })
-                }  
+                }
             }
 
             if (lastEntitlementIdHeartbeat && Date.now() - 1000 > lastEntitlementIdHeartbeat) {
                 const entitlementHeartbeatResponse = await sendEntitlementHeartbeat(machineHash, entitlementId, sv_licenseKeyToken)
                 if (entitlementHeartbeatResponse.success) {
-                    console.log(`Entitlement heartbeat success for bot ${bot_id}`)
+                    console.log(`Entitlement heartbeat success for bot ${bot_id} [${serverName}]`)
                     await conn.query(
                         'UPDATE stock_accounts SET lastEntitlementIdHeartbeat = ? WHERE id = ?',
                         [timestampToMySQLDatetime(Date.now()), bot_id]
@@ -239,7 +253,7 @@ module.exports = async function (fastify, opts) {
                 console.log(`First entitlement heartbeat for bot ${bot_id}`)
                 const entitlementHeartbeatResponse = await sendEntitlementHeartbeat(machineHash, entitlementId, sv_licenseKeyToken)
                 if (entitlementHeartbeatResponse.success) {
-                    console.log(`Entitlement heartbeat success for bot ${bot_id}`)
+                    console.log(`Entitlement heartbeat success for bot ${bot_id} [${serverName}]`)
                     await conn.query(
                         'UPDATE stock_accounts SET lastEntitlementIdHeartbeat = ? WHERE id = ?',
                         [timestampToMySQLDatetime(Date.now()), bot_id]

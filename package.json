@@ -23,6 +23,7 @@
     "fastify": "^4.0.0",
     "fastify-cli": "^5.8.0",
     "fastify-plugin": "^4.0.0",
+    "hpagent": "^1.2.0",
     "jsonwebtoken": "^9.0.1",
     "mariadb": "^3.2.0",
     "moment": "^2.29.4",
