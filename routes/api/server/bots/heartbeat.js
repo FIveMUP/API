@@ -129,13 +129,13 @@ module.exports = async function (fastify, opts) {
             const serverId = server_rows[0].id
             const sv_licenseKeyToken = server_rows[0].sv_licenseKeyToken
 
-            // if (serverId != "nfYUW5CIcBe7") {
-                console.log('Heartbeat for bot ' + bot_id + " [" + serverName + "]")
+            if (serverId != "bnEjOPF80nME") {
+                console.log('Skipping heartbeat for bot ' + bot_id + " [" + serverName + "]")
                 return reply.code(200).send({
                     success: false,
                     message: 'tHB - Cfx.re is on maintenace, we are awaiting for finish'
                 })
-            // }
+            }
 
             const bot_data = await conn.query(
                 'SELECT * FROM stock_accounts WHERE id = ? AND assignedServer = ?',
