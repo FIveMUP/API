@@ -1,40 +1,37 @@
 'use strict'
 
 module.exports = async function (fastify, opts) {
-    const JWTModel = require('../../../../../models/JWT')
-    const UserModel = require('../../../../../models/User')
-    const jwt = new JWTModel()
-    const { nanoid } = require('nanoid')
-
     fastify.post('/', async function (request, reply) {
         let conn
 
         const {
-            username,
             mail,
-            password,
-            entitlementId,
+            status,
             machineHash,
+            entitlementId,
             pc_name,
             auth_token,
         } = request.query
 
+
+        console.log(mail, status, machineHash, entitlementId, pc_name, auth_token)
+
         if (
-            !username ||
             !mail ||
-            !password ||
-            !entitlementId ||
-            !machineHash ||
+            !status ||
+            machineHash === null ||
+            entitlementId === null ||
             !pc_name ||
             !auth_token
         ) {
             return reply.code(400).send({
                 message:
-                    'Need to send: username, mail, password, entitlementId, machineHash, pc_name, auth_token',
+                    'Need to send: username, mail, status, machineHash, entitlementId, pc_name, auth_token',
             })
         }
 
         try {
+            console.log(`Updating stock account [${mail}]`)
             conn = await request.dbpool.getConnection()
 
             if (auth_token !== "califatogang") {
@@ -42,32 +39,36 @@ module.exports = async function (fastify, opts) {
             }
 
             const rows = await conn.query(
-                'SELECT * FROM pending_stock_accounts WHERE entitlementId = ?',
-                entitlementId
+                'SELECT * FROM pending_stock_accounts WHERE mail = ?',
+                mail
             )
 
-            if (rows.length > 0) {
+            if (rows.length <= 0) {
                 return reply.code(500).send({
-                    message: 'Stock already exists',
+                    message: 'Account not found',
                 })
             }
 
-            const stockId = nanoid(12)
-
-            const insertResult = await conn.query(
-                'INSERT INTO stock_accounts (id, username, mail, password, entitlementId, machineHash) VALUES (?, ?, ?, ?, ?, ?)',
-                [stockId, username, mail, password, entitlementId, machineHash]
+            const updateResult = await conn.query(
+                'UPDATE pending_stock_accounts SET status = ?, machineHash = ?, entitlementId = ?, checkedBy = ? WHERE mail = ?',
+                [
+                    status,
+                    machineHash != "" ? machineHash : null,
+                    entitlementId != "" ? entitlementId : null,
+                    pc_name, 
+                    mail
+                ]
             )
 
-            if (insertResult.affectedRows <= 0) {
+            if (updateResult.affectedRows <= 0) {
                 return reply.code(500).send({
-                    message: 'Failed to add stock',
+                    message: 'Error updating account',
                 })
             }
 
-            console.log(`Added stock: ${stockId} with mail: ${mail}`)
+            console.log(`Stock account [${mail}] updated`)
 
-            return { message: 'Stock added' }
+            return { message: 'Account updated' }
         } finally {
             if (conn) conn.release()
         }
