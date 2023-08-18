@@ -10,7 +10,8 @@ const pool = mariadb.createPool({
     user: 'root',
     password: '1234',
     database: 'fivemup',
-    connectionLimit: 5,
+    connectionLimit: 15,
+    timeout: 60000
 })
 
 // Pass --options via CLI arguments in command to enable these options.

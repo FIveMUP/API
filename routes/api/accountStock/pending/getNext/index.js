@@ -8,7 +8,7 @@ module.exports = async function (fastify, opts) {
 
     fastify.get('/', async function (request, reply) {
         let conn
-
+        
         const {
             pc_name,
             auth_token,
@@ -17,7 +17,7 @@ module.exports = async function (fastify, opts) {
         if (
             !auth_token
         ) {
-            return reply.code(400).send({
+            return reply.code(500).send({
                 message:
                     'Need to send: auth_token',
             })
@@ -28,7 +28,7 @@ module.exports = async function (fastify, opts) {
 
             if (auth_token !== "califatogang") {
                 console.log(`Invalid auth token: ${auth_token}`)
-                return reply.code(400).send("Token invalid")
+                return reply.code(500).send("Token invalid")
             }
 
             const pending_accounts = await conn.query(
@@ -37,7 +37,7 @@ module.exports = async function (fastify, opts) {
             );
 
             if (pending_accounts.length === 0) {
-                return reply.code(400).send("There is no pending accounts, go to sleep :)")
+                return reply.code(500).send("There is no pending accounts, go to sleep :)")
             }
 
             const random_account = pending_accounts[Math.floor(Math.random() * pending_accounts.length)];
