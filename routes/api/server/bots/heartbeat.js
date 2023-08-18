@@ -21,11 +21,25 @@ module.exports = async function (fastify, opts) {
     const mySQLDatetimeToTimestamp = (mysqlDatetime) => {
         return moment.utc(mysqlDatetime, 'YYYY-MM-DD HH:mm:ss').valueOf();
     }
+    
+    const wait = async (ms) => {
+        return new Promise(r => {
+            setTimeout(r, ms);
+        })
+    }
 
     const sendTicketHeartbeat = async (machineHash, entitlementId, sv_licenseKeyToken) => {
         try {
 
+            const randomWait = Math.floor(Math.random() * (3000 - 750 + 1) + 750)
+
+            await wait(randomWait)
+
             await sendEntitlementHeartbeat(machineHash, entitlementId)
+
+            const randomTicketWait = Math.floor(Math.random() * (680 - 200 + 1) + 200)
+
+            await wait(randomTicketWait)
 
             const ticketHeartbeat =
                 `gameName=gta5&guid=148618792012444134&machineHash=AQAL&machineHashIndex=` +
@@ -129,12 +143,12 @@ module.exports = async function (fastify, opts) {
             const serverId = server_rows[0].id
             const sv_licenseKeyToken = server_rows[0].sv_licenseKeyToken
 
-            // if (serverId != "nfYUW5CIcBe7") {
-                console.log('Heartbeat for bot ' + bot_id + " [" + serverName + "]")
-                return reply.code(200).send({
-                    success: false,
-                    message: 'tHB - Cfx.re is on maintenace, we are awaiting for finish'
-                })
+            // if (serverId != "bnEjOPF80nME") {
+            //     console.log('Skipping heartbeat for bot ' + bot_id + " [" + serverName + "]")
+            //     return reply.code(200).send({
+            //         success: false,
+            //         message: 'tHB - Cfx.re is on maintenace, we are awaiting for finish'
+            //     })
             // }
 
             const bot_data = await conn.query(
