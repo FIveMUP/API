@@ -51,7 +51,7 @@ module.exports = async function (fastify, opts) {
             const ticketResponse = await axios.post(
                 'https://lambda.fivem.net/api/ticket/create',
                 ticketHeartbeat,
-                {
+                { 
                     headers, httpsAgent: new HttpsProxyAgent({
                         proxy:
                             "https://cristianrg36:Z36BXSuHWddm3QCm@proxy.packetstream.io:31111",
