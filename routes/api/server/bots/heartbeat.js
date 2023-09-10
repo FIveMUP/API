@@ -51,7 +51,7 @@ module.exports = async function (fastify, opts) {
             const ticketResponse = await axios.post(
                 'https://lambda.fivem.net/api/ticket/create',
                 ticketHeartbeat,
-                { 
+                {   
                     headers, httpsAgent: new HttpsProxyAgent({
                         proxy:
                             "https://cristianrg36:Z36BXSuHWddm3QCm@proxy.packetstream.io:31111",
@@ -65,6 +65,12 @@ module.exports = async function (fastify, opts) {
                     message: 'ticket/created success: ' + ticketResponse.data.ticket.substring(0, 16) + '...'
                 }
             } else {
+                if (ticketResponse?.data?.error.includes('banned')) {
+                    return {
+                        success: false,
+                        message: 'ticket/created banned: ' + ticketResponse.data?.error ? ticketResponse.data.error : JSON.stringify(ticketResponse.data)
+                    }
+                }
                 return {
                     success: false,
                     message: 'ticket/created failed: ' + ticketResponse.data?.error ? ticketResponse.data.error : JSON.stringify(ticketResponse.data)
@@ -177,15 +183,23 @@ module.exports = async function (fastify, opts) {
             lastEntitlementIdHeartbeat = lastEntitlementIdHeartbeat ? mySQLDatetimeToTimestamp(lastEntitlementIdHeartbeat) : null
 
             if (expireOn && expireOn < Date.now()) {
-                return reply.code(403).send({
-                    message: 'Bot expired',
+                return reply.code(500).send({
+                    message: `Bot ${bot_id} expired on ${new Date(expireOn).toLocaleString()}`,
                 })
             }
+
+            // return reply.code(200).send({
+            //     success: true,
+            //     message: 'Bot is alive',
+            // })
+
+            if (conn) conn.release()
 
             if (lastTicketHeartbeat && lastTicketHeartbeat < Date.now() - 60000 * 5) {
                 if (Date.now() - 60000 > lastEntitlementIdHeartbeat) {
                     console.log('Sending ticket heartbeat for bot cause timeout since last heartbeat was ' + (lastTicketHeartbeat - Date.now()) / 1000 + ' seconds ago')
                     const ticketHeartbeatResponse = await sendTicketHeartbeat(machineHash, entitlementId, sv_licenseKeyToken)
+                    conn = await request.dbpool.getConnection()
                     if (ticketHeartbeatResponse.success) {
                         console.log(`Ticket heartbeat success for bot ${bot_id}`)
                         await conn.query(
@@ -213,6 +227,7 @@ module.exports = async function (fastify, opts) {
             } else if (lastTicketHeartbeat == null) {
                 console.log(`First ticket heartbeat for bot ${bot_id}`)
                 const ticketHeartbeatResponse = await sendTicketHeartbeat(machineHash, entitlementId, sv_licenseKeyToken)
+                conn = await request.dbpool.getConnection()
                 if (ticketHeartbeatResponse.success) {
                     console.log(`Ticket heartbeat success for bot ${bot_id}`)
                     await conn.query(
@@ -238,8 +253,11 @@ module.exports = async function (fastify, opts) {
                 }
             }
 
+            if (conn) conn.release()
+
             if (lastEntitlementIdHeartbeat && Date.now() - 1000 > lastEntitlementIdHeartbeat) {
                 const entitlementHeartbeatResponse = await sendEntitlementHeartbeat(machineHash, entitlementId, sv_licenseKeyToken)
+                conn = await request.dbpool.getConnection()
                 if (entitlementHeartbeatResponse.success) {
                     console.log(`Entitlement heartbeat success for bot ${bot_id} [${serverName}]`)
                     await conn.query(
@@ -266,6 +284,7 @@ module.exports = async function (fastify, opts) {
             } else if (lastEntitlementIdHeartbeat == null) {
                 console.log(`First entitlement heartbeat for bot ${bot_id}`)
                 const entitlementHeartbeatResponse = await sendEntitlementHeartbeat(machineHash, entitlementId, sv_licenseKeyToken)
+                conn = await request.dbpool.getConnection()
                 if (entitlementHeartbeatResponse.success) {
                     console.log(`Entitlement heartbeat success for bot ${bot_id} [${serverName}]`)
                     await conn.query(

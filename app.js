@@ -1,18 +1,10 @@
 'use strict'
 
 const path = require('path')
-const mariadb = require('mariadb')
 const AutoLoad = require('@fastify/autoload')
 console.log('Starting FiveMUP API')
 
-const pool = mariadb.createPool({
-    host: '127.0.0.1',
-    user: 'root',
-    password: '1234',
-    database: 'fivemup',
-    connectionLimit: 15,
-    timeout: 60000
-})
+const pool = require('./db')
 
 // Pass --options via CLI arguments in command to enable these options.
 module.exports.options = {}
