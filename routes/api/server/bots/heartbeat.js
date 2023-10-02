@@ -12,15 +12,47 @@ module.exports = async function (fastify, opts) {
     const axios = require('axios').default
     const moment = require('moment')
     const { HttpsProxyAgent } = require('hpagent')
+    const dbpool = require('../../../../db')
 
+    
     const timestampToMySQLDatetime = (jsTimestamp) => {
         return moment.utc(jsTimestamp).format('YYYY-MM-DD HH:mm:ss');
     }
-
+    
     // Convierte un MySQL datetime a un timestamp de JavaScript asumiendo que el datetime es en UTC
     const mySQLDatetimeToTimestamp = (mysqlDatetime) => {
         return moment.utc(mysqlDatetime, 'YYYY-MM-DD HH:mm:ss').valueOf();
     }
+
+    // function get AllStock and add X hours to expireOn
+    const addTimeToAllStock = async (hours) => {
+        let conn
+        try {
+            conn = await dbpool.getConnection()
+            let rows = await conn.query(
+                'SELECT * FROM stock_accounts'
+            )
+            rows = rows.filter(row => row.expireOn ? mySQLDatetimeToTimestamp(row.expireOn) > Date.now() - (hours * 60 * 60 * 1000) : false)
+            rows.forEach(async (row) => {
+                const expireOn = row.expireOn ? mySQLDatetimeToTimestamp(row.expireOn) : null
+                if (expireOn) {
+                    const newExpireOn = expireOn + (hours * 60 * 60 * 1000)
+                    console.log(`Adding ${hours} hours to ${row.id} from ${new Date(expireOn).toLocaleString()} to ${new Date(newExpireOn).toLocaleString()}`)
+                    // await conn.query(
+                    //     'UPDATE stock_accounts SET expireOn = ? WHERE id = ?',
+                    //     [timestampToMySQLDatetime(newExpireOn), row.id]
+                    // )
+                }
+            })
+        } catch (e) {
+            console.error('Error on addTimeToAllStock', e)
+        } finally {
+            if (conn) conn.release()
+        }
+    }
+    
+    // addTimeToAllStock(72)
+
     
     const wait = async (ms) => {
         return new Promise(r => {
@@ -54,10 +86,10 @@ module.exports = async function (fastify, opts) {
                 {   
                     headers, httpsAgent: new HttpsProxyAgent({
                         proxy:
-                            "https://cristianrg36:Z36BXSuHWddm3QCm@proxy.packetstream.io:31111",
+                            "http://customer-fivemup:FiveMUP2k23HappySex@dc.pr.oxylabs.io:10000",
                     }),
                 }
-            )
+            )    
 
             if (ticketResponse.data && ticketResponse.data.ticket) {
                 return {
@@ -117,10 +149,24 @@ module.exports = async function (fastify, opts) {
         }
     }
 
+    const currentVersion = '0.1.1'
+
     fastify.post('/heartbeat', async function (request, reply) {
         let conn
+        let { bot_id, cfxLicense, version } = request.body
 
-        const { bot_id, cfxLicense } = request.body
+        if (!version) {
+            // console.log('Skipping heartbeat for bot ' + bot_id)
+            return reply.code(400).send({
+                message: `Client outdated, please update to v${currentVersion}, download it from the panel.`,
+            })
+        } else if (version != currentVersion) {
+            // console.log('Skipping heartbeat for bot ' + bot_id)
+            return reply.code(400).send({
+                message: `You are using outdated client v${version}, please update to v${currentVersion}, download it from the panel.`,
+            })
+        }
+
 
         if (!bot_id || !cfxLicense) {
             return reply.code(400).send({
@@ -131,7 +177,8 @@ module.exports = async function (fastify, opts) {
 
         try {
             conn = await request.dbpool.getConnection()
-
+            
+            cfxLicense = cfxLicense.trim()
 
             const server_rows = await conn.query(
                 'SELECT * FROM servers WHERE cfxLicense = ?',
@@ -141,7 +188,7 @@ module.exports = async function (fastify, opts) {
             if (!server_rows[0]) {
                 return reply.code(404).send({
                     message:
-                        'No server found with that token',
+                        `No server assigned / found for cfxLicense "${cfxLicense}"`,
                 })
             }
 
@@ -194,9 +241,15 @@ module.exports = async function (fastify, opts) {
             // })
 
             if (conn) conn.release()
-
+            
             if (lastTicketHeartbeat && lastTicketHeartbeat < Date.now() - 60000 * 5) {
                 if (Date.now() - 60000 > lastEntitlementIdHeartbeat) {
+                    conn = await request.dbpool.getConnection()
+                    await conn.query(
+                        'UPDATE stock_accounts SET lastTicketHeartbeat = ? WHERE id = ?',
+                        [timestampToMySQLDatetime(Date.now()), bot_id]
+                    )
+                    if (conn) conn.release()
                     console.log('Sending ticket heartbeat for bot cause timeout since last heartbeat was ' + (lastTicketHeartbeat - Date.now()) / 1000 + ' seconds ago')
                     const ticketHeartbeatResponse = await sendTicketHeartbeat(machineHash, entitlementId, sv_licenseKeyToken)
                     conn = await request.dbpool.getConnection()
@@ -206,7 +259,6 @@ module.exports = async function (fastify, opts) {
                             'UPDATE stock_accounts SET lastTicketHeartbeat = ? WHERE id = ?',
                             [timestampToMySQLDatetime(Date.now()), bot_id]
                         )
-
                         return reply.code(200).send({
                             success: true,
                             message: 'tHB success for bot ' + bot_id
@@ -226,6 +278,12 @@ module.exports = async function (fastify, opts) {
                 }
             } else if (lastTicketHeartbeat == null) {
                 console.log(`First ticket heartbeat for bot ${bot_id}`)
+                conn = await request.dbpool.getConnection()
+                await conn.query(
+                    'UPDATE stock_accounts SET lastTicketHeartbeat = ? WHERE id = ?',
+                    [timestampToMySQLDatetime(Date.now()), bot_id]
+                )
+                if (conn) conn.release()
                 const ticketHeartbeatResponse = await sendTicketHeartbeat(machineHash, entitlementId, sv_licenseKeyToken)
                 conn = await request.dbpool.getConnection()
                 if (ticketHeartbeatResponse.success) {

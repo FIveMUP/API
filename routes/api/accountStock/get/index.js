@@ -10,7 +10,7 @@ module.exports = async function (fastify, opts) {
         let conn
 
         const { auth_token,} = request.query
-
+        console.log("ASDASDS")
         if (!auth_token) {
             return reply.code(400).send({
                 message:
@@ -41,16 +41,19 @@ module.exports = async function (fastify, opts) {
                 })
             }
 
+            console.time('getStock')
+            
             const rows = await conn.query(
                 'SELECT * FROM stock_accounts',
-            )
-
-            if (rows.length < 0) {
-                return reply.code(400).send({
-                    message: 'There is no stock left',
-                })
-            }
-
+                )
+                
+                if (rows.length < 0) {
+                    return reply.code(400).send({
+                        message: 'There is no stock left',
+                    })
+                }
+                
+                console.timeEnd('getStock')
             return { valid: true, rows }
         } finally {
             if (conn) conn.release()

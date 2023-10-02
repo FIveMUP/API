@@ -4,6 +4,34 @@ module.exports = async function (fastify, opts) {
     const JWTModel = require('../../../../models/JWT')
     const UserModel = require('../../../../models/User')
     const jwt = new JWTModel()
+    const crypto = require('crypto');
+
+    const hashData = async (data, length) => {
+    const hash = crypto
+        .createHash('sha256')
+        .update(data)
+        .digest('hex');
+        return hash.slice(0, length);
+    }
+
+    const generateIdentifiers = async (salt) => {
+        if (salt.length !== 12) {
+            throw new Error("Salt must be 12 characters long");
+        }
+
+        const identifiers = {};
+
+        identifiers.license = 'license:' + await hashData('license' + salt, 40);
+        identifiers.license2 = 'license2:' + await hashData('license' + salt, 40);
+        identifiers.steam = 'steam:110000' + await hashData('steam' + salt, 9);
+        identifiers.xbl = 'xbl:25354' + await hashData('xbl' + salt, 10);
+        identifiers.live = 'live:' + await hashData('live' + salt, 13);
+        identifiers.discord = 'discord:' + await hashData('discord' + salt, 18);
+        identifiers.fivem = 'fivem:' + await hashData('fivem' + salt, 7);
+
+        const identifiersArray = Object.values(identifiers);
+        return identifiersArray;
+    }
 
     fastify.get('/getIngressHb', async function (request, reply) {
         let conn
@@ -53,16 +81,19 @@ module.exports = async function (fastify, opts) {
 
             for (let i = 0; i < assignedBots.length; i++) {
                 const bot = assignedBots[i]
-
+                const uniqueIdentifiers = await generateIdentifiers(bot.id);
                 const botData = {
                     endpoint: '127.0.0.1',
                     id: bot.id,
-                    identifiers: [
-                        `steam:${bot.id}`
-                    ],
+                    identifiers: uniqueIdentifiers,
+                    // identifiers: [
+                    //     `steam:${bot.id}`
+                    // ],
                     name: bot.username,
                     ping: Math.floor(Math.random() * 130) + 20
                 }
+
+                // console.log(botData)
 
                 fakeBotsArray.push(botData)
             }
